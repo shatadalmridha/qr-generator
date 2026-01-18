@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>QR Code Generator | Shatadal Mridha</title>
+
+<style>
+body{
+    font-family: Arial, sans-serif;
+    background: linear-gradient(135deg,#1d2671,#c33764);
+    margin:0;
+    padding:20px;
+    color:#fff;
+}
+
+.container{
+    max-width:900px;
+    margin:auto;
+    background:#ffffff;
+    color:#333;
+    border-radius:16px;
+    padding:25px;
+    box-shadow:0 15px 40px rgba(0,0,0,0.3);
+}
+
+.header{
+    display:flex;
+    align-items:center;
+    gap:15px;
+    margin-bottom:20px;
+}
+
+.header img{
+    width:70px;
+    height:70px;
+    border-radius:50%;
+    object-fit:cover;
+    border:3px solid #c33764;
+}
+
+.header h2{
+    margin:0;
+}
+
+.section{
+    margin-bottom:20px;
+}
+
+input, textarea, button{
+    width:100%;
+    padding:12px;
+    margin-top:8px;
+    border-radius:8px;
+    border:1px solid #ccc;
+    font-size:16px;
+}
+
+textarea{
+    resize:none;
+    height:80px;
+}
+
+.colors{
+    display:flex;
+    gap:15px;
+}
+
+.colors div{
+    flex:1;
+}
+
+button{
+    background:#c33764;
+    color:#fff;
+    border:none;
+    cursor:pointer;
+    font-weight:bold;
+}
+
+button:hover{
+    background:#1d2671;
+}
+
+.preview{
+    text-align:center;
+    margin-top:20px;
+}
+
+.preview img{
+    max-width:260px;
+    margin:15px 0;
+    border:8px solid #eee;
+    border-radius:12px;
+}
+
+.history{
+    margin-top:30px;
+}
+
+.history h3{
+    margin-bottom:10px;
+}
+
+.history-item{
+    display:flex;
+    align-items:center;
+    gap:15px;
+    background:#f7f7f7;
+    padding:10px;
+    border-radius:10px;
+    margin-bottom:10px;
+}
+
+.history-item img{
+    width:70px;
+    border-radius:6px;
+}
+
+.history-item button{
+    width:auto;
+    padding:8px 12px;
+    font-size:14px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <!-- Header -->
+    <div class="header">
+        <img id="profilePic" src="https://via.placeholder.com/150">
+        <div>
+            <h2 id="userName">Shatadal Mridha</h2>
+            <input type="text" placeholder="Your Name" oninput="updateName(this.value)">
+            <input type="file" accept="image/*" onchange="updatePic(event)">
+        </div>
+    </div>
+
+    <!-- Input -->
+    <div class="section">
+        <label>Enter Text for QR Code</label>
+        <textarea id="qrText" placeholder="Type your text here..."></textarea>
+    </div>
+
+    <!-- Colors -->
+    <div class="section colors">
+        <div>
+            <label>Foreground Color</label>
+            <input type="color" id="fgColor" value="#000000">
+        </div>
+        <div>
+            <label>Background Color</label>
+            <input type="color" id="bgColor" value="#ffffff">
+        </div>
+    </div>
+
+    <!-- Generate -->
+    <button onclick="generateQR()">Generate QR Code</button>
+
+    <!-- Preview -->
+    <div class="preview" id="preview" style="display:none;">
+        <h3>QR Code Preview</h3>
+        <img id="qrImage">
+        <br>
+        <button onclick="downloadQR()">Download QR</button>
+    </div>
+
+    <!-- History -->
+    <div class="history">
+        <h3>QR Code History</h3>
+        <div id="historyList"></div>
+    </div>
+
+</div>
+
+<script>
+let currentQR = "";
+
+function generateQR(){
+    const text = document.getElementById("qrText").value.trim();
+    if(!text){
+        alert("Please enter text");
+        return;
+    }
+
+    const fg = document.getElementById("fgColor").value.replace("#","");
+    const bg = document.getElementById("bgColor").value.replace("#","");
+
+    const url = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(text)}&color=${fg}&bgcolor=${bg}`;
+
+    document.getElementById("qrImage").src = url;
+    document.getElementById("preview").style.display="block";
+    currentQR = url;
+
+    saveHistory(text,url);
+    loadHistory();
+}
+
+function downloadQR(){
+    const a = document.createElement("a");
+    a.href = currentQR;
+    a.download = "qr-code.png";
+    a.click();
+}
+
+function saveHistory(text,url){
+    let history = JSON.parse(localStorage.getItem("qrHistory")) || [];
+    history.unshift({text,url});
+    localStorage.setItem("qrHistory",JSON.stringify(history.slice(0,10)));
+}
+
+function loadHistory(){
+    const history = JSON.parse(localStorage.getItem("qrHistory")) || [];
+    const box = document.getElementById("historyList");
+    box.innerHTML = "";
+
+    history.forEach(item=>{
+        const div = document.createElement("div");
+        div.className="history-item";
+        div.innerHTML = `
+            <img src="${item.url}">
+            <div style="flex:1;">${item.text}</div>
+            <button onclick="downloadFromHistory('${item.url}')">Download</button>
+        `;
+        box.appendChild(div);
+    });
+}
+
+function downloadFromHistory(url){
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "qr-code.png";
+    a.click();
+}
+
+function updateName(name){
+    document.getElementById("userName").innerText = name || "Your Name";
+}
+
+function updatePic(e){
+    const reader = new FileReader();
+    reader.onload = ()=>{
+        document.getElementById("profilePic").src = reader.result;
+    };
+    reader.readAsDataURL(e.target.files[0]);
+}
+
+loadHistory();
+</script>
+
+</body>
+</html>
